@@ -1,15 +1,15 @@
-import puppeteer from "puppeteer";
+import { Browser, chromium, Page } from "playwright";
 import { Deposit } from "./deposit";
 
 async function withBrowser<R>(
-  callback: (browser: puppeteer.Browser) => Promise<R>,
+  callback: (browser: Browser) => Promise<R>,
 ): Promise<R> {
-  const browser = await puppeteer.launch();
+  const browser = await chromium.launch();
 
   return callback(browser).finally(() => browser.close());
 }
 
-async function openIdeaBankPage(browser: puppeteer.Browser) {
+async function openIdeaBankPage(browser: Browser) {
   const page = await browser.newPage();
   await page.goto(
     "https://www.ideabank.pl/lokata-strukturyzowana-wartosc-biezaca",
@@ -19,11 +19,11 @@ async function openIdeaBankPage(browser: puppeteer.Browser) {
   return page;
 }
 
-const readDepositValue = async (deposit: Deposit, page: puppeteer.Page) => {
+const readDepositValue = async (deposit: Deposit, page: Page) => {
   await page.click(".structure-name-label");
 
-  const [depositNameButton] = await page.$x(
-    `//a/span[contains(., '${deposit.title}')]`,
+  const depositNameButton = await page.$(
+    `xpath=//a/span[contains(., '${deposit.title}')]`,
   );
   if (!depositNameButton) {
     throw new Error(`Cannot find span with deposit title "${deposit.title}"`);
@@ -33,27 +33,27 @@ const readDepositValue = async (deposit: Deposit, page: puppeteer.Page) => {
 
   await page.click(".structure-number-label");
 
-  const subscriptionNumberButton = await page
-    .waitForXPath(`//a/span[starts-with(., '${deposit.subscription}')]`, {
+  const subscriptionNumberButton = await page.waitForSelector(
+    `xpath=//a/span[starts-with(., '${deposit.subscription}')]`,
+    {
       timeout: 2000,
-    })
-    .catch(() =>
-      Promise.reject(
-        new Error(
-          `Cannot find span with subscription number ${deposit.subscription}`,
-        ),
-      ),
+    },
+  );
+  if (!subscriptionNumberButton) {
+    throw new Error(
+      `Cannot find span with subscription number ${deposit.subscription}`,
     );
+  }
 
   await subscriptionNumberButton.click();
 
-  const valueRow = await page
-    .waitForSelector(".current-value-result tbody tr", { timeout: 2000 })
-    .catch(() =>
-      Promise.reject(
-        new Error("Cannot find the rows in the table with deposit values"),
-      ),
-    );
+  const valueRow = await page.waitForSelector(
+    ".current-value-result tbody tr",
+    { timeout: 2000 },
+  );
+  if (!valueRow) {
+    throw new Error("Cannot find the rows in the table with deposit values");
+  }
 
   return valueRow.evaluate((element) => ({
     date: element.childNodes[0].textContent,

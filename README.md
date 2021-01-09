@@ -4,12 +4,15 @@ A tool that fetches and shows the latest value of deposits in IdeaBank.
 
 The data is fetched from <https://www.ideabank.pl/lokata-strukturyzowana-wartosc-biezaca> by
 crawling it with either [Puppeteer](https://github.com/puppeteer/puppeteer) or
-[Playwright](https://playwright.dev/) (TODO).
+[Playwright](https://playwright.dev/).
 
 ## Installation and configuration
 
 Go to [src/index.ts](./src/index.ts) and configure the `depositsToRead` array to
 your desire. You can enter any valid deposit name and subscription number.
+
+Optionally, you can change the `engine` variable to `puppeteer` or `playwright`, to change the
+crawler library.
 
 Then, run the following to install the dependencies:
 
